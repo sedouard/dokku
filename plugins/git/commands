@@ -20,11 +20,17 @@ git_build_app_repo() {
   git submodule update --init --recursive &> /dev/null
   find -name .git -prune -exec rm -rf {} \; > /dev/null
 
-  if [[ -f Dockerfile ]] && [[ "$([[ -f .env ]] && grep -q BUILDPACK_URL .env; echo $?)" != "0" ]] && [[ ! -f ".buildpacks" ]]; then
-    dokku receive "$APP" "dockerfile" "$TMP_WORK_DIR" | sed -u "s/^/"$'\e[1G'"/"
-  else
-    dokku receive "$APP" "herokuish" "$TMP_WORK_DIR" | sed -u "s/^/"$'\e[1G'"/"
+  if [[ "$([[ -f .env ]] && grep -q BUILDPACK_URL .env; echo $?)" != "0" ]] && [[ ! -f ".buildpacks" ]]; then
+    if [[ -f Dockerfile ]] && [[ -f docker-compose.yml ]]; then
+      dokku receive "$APP" "compose" "$TMP_WORK_DIR" | sed -u "s/^/"$'\e[1G'"/"
+      return $?
+    elif [[ -f Dockerfile ]]; then
+      dokku receive "$APP" "dockerfile" "$TMP_WORK_DIR" | sed -u "s/^/"$'\e[1G'"/"
+      return $?
+    fi
   fi
+
+  dokku receive "$APP" "herokuish" "$TMP_WORK_DIR" | sed -u "s/^/"$'\e[1G'"/"
 }
 
 case "$1" in
